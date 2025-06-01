@@ -1,0 +1,160 @@
+# app.py
+from flask import Flask, render_template, request, jsonify
+import time
+import random
+
+app = Flask(__name__)
+
+# Store chat sessions (in production, use a database)
+chat_sessions = {}
+
+@app.route('/')
+def index():
+    """Render the main chatbot page"""
+    return render_template('chatbot.html')
+
+@app.route('/api/chat', methods=['POST'])
+def chat():
+    """Handle chat messages and return bot responses"""
+    try:
+        data = request.get_json()
+        user_message = data.get('message', '').strip()
+        session_id = data.get('session_id', 'default')
+        
+        if not user_message:
+            return jsonify({'error': 'No message provided'}), 400
+        
+        # Initialize session if it doesn't exist
+        if session_id not in chat_sessions:
+            chat_sessions[session_id] = []
+        
+        # Add user message to session
+        chat_sessions[session_id].append({
+            'message': user_message,
+            'is_user': True,
+            'timestamp': time.time()
+        })
+        
+        # Generate bot response (replace this with your AI logic)
+        bot_response = generate_legal_response(user_message)
+        
+        # Add bot response to session
+        chat_sessions[session_id].append({
+            'message': bot_response,
+            'is_user': False,
+            'timestamp': time.time()
+        })
+        
+        # Simulate processing delay
+        time.sleep(random.uniform(0.5, 1.5))
+        
+        return jsonify({
+            'response': bot_response,
+            'session_id': session_id,
+            'status': 'success'
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/chat/history/<session_id>')
+def get_chat_history(session_id):
+    """Get chat history for a session"""
+    history = chat_sessions.get(session_id, [])
+    return jsonify({'history': history})
+
+def generate_legal_response(user_message):
+    """
+    Generate legal chatbot response based on user message.
+    Replace this function with your actual AI/ML model integration.
+    """
+    message_lower = user_message.lower()
+    
+    # Contract-related queries
+    if any(word in message_lower for word in ['contract', 'agreement', 'terms']):
+        return """A contract is a legally binding agreement between two or more parties. For a contract to be valid, it typically requires:
+
+1. **Offer and Acceptance**: One party makes an offer, and the other accepts it
+2. **Consideration**: Something of value must be exchanged (money, services, goods)
+3. **Legal Capacity**: All parties must have the legal ability to enter contracts
+4. **Legal Purpose**: The contract must be for a lawful purpose
+
+Would you like me to explain any of these elements in more detail, or do you have a specific contract question?"""
+    
+    # Tenant rights queries
+    elif any(word in message_lower for word in ['tenant', 'landlord', 'rent', 'eviction']):
+        return """Tenant rights vary by jurisdiction, but generally include:
+
+• **Right to habitable housing**: Your rental must meet basic health and safety standards
+• **Privacy rights**: Landlords must give proper notice before entering (usually 24-48 hours)
+• **Protection from discrimination**: Fair housing laws protect against discrimination
+• **Protection from illegal eviction**: Landlords must follow legal procedures for eviction
+• **Right to security deposit return**: Subject to reasonable deductions for damages
+
+**Important**: Laws vary significantly by state and locality. What specific tenant issue are you facing? I can provide more targeted guidance."""
+    
+    # Business formation queries
+    elif any(word in message_lower for word in ['business', 'startup', 'llc', 'corporation', 'company']):
+        return """Starting a business involves several legal steps:
+
+**1. Choose Business Structure:**
+• Sole Proprietorship (simplest, personal liability)
+• LLC (liability protection, tax flexibility)
+• Corporation (strongest protection, more complex)
+• Partnership (shared ownership and responsibility)
+
+**2. Legal Requirements:**
+• Register business name
+• Obtain EIN (Employer Identification Number)
+• Get required licenses and permits
+• Open business bank accounts
+• Consider business insurance
+
+**3. Ongoing Compliance:**
+• File annual reports
+• Maintain proper records
+• Pay business taxes
+
+What type of business are you planning to start? This will help me provide more specific guidance."""
+    
+    # Employment law queries
+    elif any(word in message_lower for word in ['employment', 'job', 'workplace', 'fired', 'discrimination']):
+        return """Employment law covers many areas. Here are some key points:
+
+**At-Will Employment**: Most US employees can be terminated for any reason (except illegal ones)
+
+**Protected Classes**: Discrimination based on race, gender, age, religion, disability, etc. is illegal
+
+**Wage and Hour Laws**: 
+• Minimum wage requirements
+• Overtime pay (typically 1.5x for 40+ hours/week)
+• Meal and break requirements
+
+**Workplace Safety**: OSHA requires safe working conditions
+
+**Family Leave**: FMLA provides unpaid leave for qualifying situations
+
+Are you dealing with a specific workplace issue? I can provide more targeted information based on your situation."""
+    
+    # General legal queries
+    else:
+        return f"""I understand you're asking about: "{user_message}"
+
+This appears to be a legal matter that may require analysis based on your specific circumstances and jurisdiction. Here's what I recommend:
+
+**Immediate Steps:**
+1. Gather all relevant documents
+2. Note important dates and deadlines
+3. Consider the urgency of your situation
+
+**Getting Help:**
+• For complex matters, consult with a qualified attorney
+• Many bar associations offer free legal clinics
+• Legal aid societies help those who qualify financially
+
+**Important Reminder**: I provide general legal information only, not legal advice. Laws vary by jurisdiction and individual circumstances matter significantly.
+
+Could you provide more specific details about your legal question? This will help me give you more targeted information."""
+
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=5000)
