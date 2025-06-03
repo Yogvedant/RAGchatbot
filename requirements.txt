@@ -1,11 +1,12 @@
 sentence-transformers
 langchain
-django
+flask
 pypdf
 python-dotenv
-pinecone[grpc]
+pinecone
 langchain-pinecone
 langchain-community
 langchain-openai
 langchain-experimental
+langchain_huggingface
 -e .
